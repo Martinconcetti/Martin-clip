@@ -142,10 +142,13 @@ async function genAI(){
   try {
     var promptText = "Eres un editor experto de clips virales para TikTok, Shorts y Reels. Tengo un video" + (topic ? " sobre: " + topic : "") + ". Analiza estos fragmentos candidatos y asígnales categoría, título llamativo en español, hashtags y puntaje de 1 a 10. Responde ÚNICAMENTE con un array JSON plano de objetos con este formato exacto (sin markdown ni texto extra): [{\"start\":10,\"end\":40,\"score\":9,\"category\":\"gracioso\",\"reason\":\"muy divertido\",\"title\":\"Título aquí\",\"hashtags\":[\"a\",\"b\",\"c\",\"d\"]}]";
 
-    // Endpoint corregido v1beta
+    // Usamos el modelo estándar y pasamos la clave correctamente en la cabecera y en la URL
     var response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
       method: "POST",
-      headers: {"Content-Type": "application/json"},
+      headers: {
+        "Content-Type": "application/json",
+        "x-goog-api-key": apiKey
+      },
       body: JSON.stringify({
         contents: [{
           parts: [{ text: promptText + "\nCandidatos actuales: " + JSON.stringify(clips) }]
@@ -153,7 +156,10 @@ async function genAI(){
       })
     });
 
-    if(!response.ok) throw new Error("Error HTTP " + response.status + ": Revisa tu API Key.");
+    if(!response.ok) {
+      var errBody = await response.text();
+      throw new Error("Error HTTP " + response.status + ": " + errBody);
+    }
 
     var data = await response.json();
     if(!data.candidates || !data.candidates[0].content) throw new Error("Respuesta inválida de la IA");
@@ -186,6 +192,7 @@ async function genAI(){
   }
   if(btn) btn.disabled = false;
 }
+
 
 function fmt(t){t=Math.max(0,Math.round(t));var m=Math.floor(t/60),s=t%60;return m+":"+(s<10?"0":"")+s}
 function setStatus(t){$("#status").textContent=t}
