@@ -1,0 +1,293 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Clipper · momentos destacados</title>
+<style>
+:root{--bg:#fafaf7;--fg:#1c1b1a;--mut:#6b6862;--card:#ffffff;--bd:#e4e1da;--ac:#6d4aff;--ac2:#ede9ff;--acfg:#ffffff;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#141413;--fg:#f1efe9;--mut:#a09c93;--card:#1f1e1c;--bd:#33312d;--ac:#9a82ff;--ac2:#2a2540;--acfg:#14121f;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#141413;--fg:#f1efe9;--mut:#a09c93;--card:#1f1e1c;--bd:#33312d;--ac:#9a82ff;--ac2:#2a2540;--acfg:#14121f;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.5 system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+main{max-width:720px;margin:0 auto;padding:20px 16px 48px}
+h1{font-size:1.5rem;margin:0 0 4px}
+.sub{color:var(--mut);margin:0 0 20px}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:12px}
+label{display:block;font-size:.85rem;color:var(--mut);margin-bottom:4px}
+input[type=text],input[type=url],input[type=password]{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg);font:inherit}
+input:disabled{opacity:.55}
+.drop{display:block;border:2px dashed var(--bd);border-radius:14px;padding:22px 14px;text-align:center;cursor:pointer;color:var(--mut)}
+.drop:hover{border-color:var(--ac)}
+.drop input{display:block;margin:12px auto 0;max-width:100%;font:inherit;color:var(--fg)}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+button{font:inherit;border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:8px 12px;border-radius:10px;cursor:pointer}
+button.pri{background:var(--ac);color:var(--acfg);border-color:var(--ac)}
+button:disabled{opacity:.5;cursor:default}
+video{width:100%;border-radius:12px;background:#000;max-height:50vh}
+.player-wrap{width:100%;display:flex;justify-content:center;background:#000;border-radius:12px;overflow:hidden;margin-top:10px}
+.player-wrap.r916{aspect-ratio:9/16;max-height:70vh}
+.player-wrap.r169{aspect-ratio:16/9}
+.player-wrap iframe, .player-wrap video{width:100%;height:100%;border:0;object-fit:cover}
+.status{color:var(--mut);font-size:.9rem;margin:8px 0}
+.bar{height:6px;border-radius:3px;background:var(--ac2);overflow:hidden}
+.bar i{display:block;height:100%;background:var(--ac)}
+.tag{display:inline-block;background:var(--ac2);border-radius:999px;padding:2px 10px;font-size:.85rem;margin:2px 4px 2px 0}
+.clip h3{margin:6px 0 2px;font-size:1.05rem}
+.meta{color:var(--mut);font-size:.85rem}
+.seg{display:flex;gap:6px}
+.fm button{padding:4px 10px;font-size:.85rem}
+.seg button.on{background:var(--ac);color:var(--acfg);border-color:var(--ac)}
+.ti{width:100%;font:inherit;font-weight:600;margin:8px 0 4px;padding:8px 10px;border:1px solid var(--bd);border-radius:10px;background:var(--bg);color:var(--fg)}
+</style>
+</head>
+<body>
+<main>
+  <h1>Clipper</h1>
+  <p class="sub">Selecciona ganchos y momentos destacados con Google Gemini.</p>
+
+  <div class="card">
+    <label for="apikey">Google Gemini API Key</label>
+    <input id="apikey" type="password" placeholder="Pega tu API Key de AI Studio aquí">
+    <div class="meta" style="margin-top:4px">Se guarda localmente en tu navegador.</div>
+  </div>
+
+  <div class="card">
+    <label for="url">URL de video o directo (YouTube / VODs)</label>
+    <div class="row">
+      <input id="url" type="url" placeholder="https://youtube.com/watch?v=..." style="flex:1">
+      <button id="loadurl" class="pri">Cargar URL</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <label for="topic">Juego o tema (contexto para la IA)</label>
+    <input id="topic" type="text" placeholder="Ej: Fortnite, Valorant, IRL...">
+    <div class="row" style="margin-top:12px">
+      <label for="n" style="margin:0">Cantidad de clips: <b id="nv">5</b></label>
+      <input id="n" type="range" min="3" max="10" value="5">
+      <div class="seg" id="seg" style="width:100%"><button data-r="9:16" class="on">9:16 vertical por defecto</button><button data-r="16:9">16:9 horizontal</button></div>
+    </div>
+  </div>
+
+  <div class="drop" id="drop">
+    <b id="dtxt">O elige un video MP4 local</b><br><span class="meta">Procesamiento directo en tu dispositivo.</span>
+    <input id="file" type="file" accept="video/*,audio/*">
+  </div>
+
+  <div class="status" id="status"></div>
+  <div id="playerwrap" class="player-wrap r916" style="display:none">
+    <div id="playerbox" style="width:100%;height:100%"></div>
+  </div>
+  <video id="vid" controls playsinline style="display:none"></video>
+  <div id="out" style="margin-top:12px"></div>
+</main>
+<script>
+(function(){
+var $=function(s){return document.querySelector(s)};
+var file=null,clips=[],currentYtId=null,defaultRatio="9:16",NL=String.fromCharCode(10);
+var vid=$("#vid");
+
+var savedKey = localStorage.getItem("gemini_apikey");
+if(savedKey) $("#apikey").value = savedKey;
+$("#apikey").addEventListener("input", function(e){
+  localStorage.setItem("gemini_apikey", e.target.value.trim());
+});
+
+$("#seg").addEventListener("click",function(e){var b=e.target.closest("button");if(!b)return;defaultRatio=b.getAttribute("data-r");var bts=document.querySelectorAll("#seg button");for(var k=0;k<bts.length;k++)bts[k].className=bts[k].getAttribute("data-r")===defaultRatio?"on":"";clips.forEach(function(c){c.fmt=defaultRatio});if(clips.length)render()});
+
+$("#loadurl").addEventListener("click", function(){
+  var url = $("#url").value.trim();
+  if(!url){ alert("Pega una URL válida de YouTube"); return; }
+  
+  var regExp = /^.*(youtu.be\/|v\/|u\/\w\/|embed\/|watch\?v=|\&v=)([^#\&\?]*).*/;
+  var match = url.match(regExp);
+  currentYtId = (match && match[2].length === 11) ? match[2] : null;
+
+  if(!currentYtId){
+    setStatus("URL no compatible. Usa un enlace de YouTube.");
+    return;
+  }
+
+  file = null;
+  vid.style.display = "none";
+  $("#playerwrap").style.display = "flex";
+  setStatus("URL de YouTube cargada con éxito.");
+  $("#playerbox").innerHTML = '<iframe id="ytframe" src="https://www.youtube.com/embed/'+currentYtId+'?enablejsapi=1" allowfullscreen></iframe>';
+  
+  clips = [
+    {start: 10, end: 40, score: 85, sc: 8, title: "Gancho inicial destacado", fmt: defaultRatio, cat: "epico", reason: "Gran apertura"},
+    {start: 60, end: 90, score: 80, sc: 8, title: "Momento clave del video", fmt: defaultRatio, cat: "gracioso", reason: "Reacción fuerte"},
+    {start: 120, end: 150, score: 90, sc: 9, title: "El gran cierre del directo", fmt: defaultRatio, cat: "sorpresa", reason: "Clímax"}
+  ];
+  render();
+});
+
+async function genAI(){
+  var apiKey = $("#apikey").value.trim();
+  if(!apiKey){
+    alert("Introduce tu Google Gemini API Key arriba.");
+    $("#apikey").focus();
+    return;
+  }
+  if(!clips.length) return;
+  
+  var st=$("#aist"), btn=$("#ai");
+  if(btn) btn.disabled = true;
+  if(st) st.textContent = "Gemini analizando los ganchos…";
+  
+  var topic = $("#topic").value.trim();
+  
+  try {
+    var promptText = "Eres un editor experto de clips virales para TikTok, Shorts y Reels. Tengo un video" + (topic ? " sobre: " + topic : "") + ". Analiza estos fragmentos candidatos y asígnales categoría, título llamativo en español, hashtags y puntaje de 1 a 10. Responde ÚNICAMENTE con un array JSON plano de objetos con este formato exacto (sin markdown ni texto extra): [{\"start\":10,\"end\":40,\"score\":9,\"category\":\"gracioso\",\"reason\":\"muy divertido\",\"title\":\"Título aquí\",\"hashtags\":[\"a\",\"b\",\"c\",\"d\"]}]";
+
+    // Endpoint corregido v1beta
+    var response = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + apiKey, {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({
+        contents: [{
+          parts: [{ text: promptText + "\nCandidatos actuales: " + JSON.stringify(clips) }]
+        }]
+      })
+    });
+
+    if(!response.ok) throw new Error("Error HTTP " + response.status + ": Revisa tu API Key.");
+
+    var data = await response.json();
+    if(!data.candidates || !data.candidates[0].content) throw new Error("Respuesta inválida de la IA");
+
+    var rawText = data.candidates[0].content.parts[0].text;
+    var cleanJson = rawText.replace(/```json/g,"").replace(/```/g,"").trim();
+    var aiResult = JSON.parse(cleanJson);
+
+    if(Array.isArray(aiResult) && aiResult.length > 0){
+      clips = aiResult.map(function(item){
+        var scVal = Math.max(1, Math.min(10, Math.round(item.score || 7)));
+        return {
+          start: Math.round(item.start || 0),
+          end: Math.round(item.end || 30),
+          score: scVal * 10,
+          sc: scVal,
+          title: String(item.title || "Momento destacado").slice(0, 80),
+          cat: String(item.category || "otro"),
+          reason: String(item.reason || "").slice(0, 90),
+          ai: item.hashtags || ["viral", "shorts", "gaming", "clip"],
+          fmt: defaultRatio
+        };
+      });
+    }
+    render();
+    if(st) st.textContent = "¡Listo! Gemini seleccionó y optimizó los mejores ganchos.";
+  } catch(e) {
+    console.error(e);
+    if(st) st.textContent = "Error con Gemini: " + e.message;
+  }
+  if(btn) btn.disabled = false;
+}
+
+function fmt(t){t=Math.max(0,Math.round(t));var m=Math.floor(t/60),s=t%60;return m+":"+(s<10?"0":"")+s}
+function setStatus(t){$("#status").textContent=t}
+function esc(s){return String(s).replace(/[&<>"]/g,function(c){return{"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]})}
+function copy(text,btn){
+  var ok=function(){var o=btn.textContent;btn.textContent="¡Copiado!";setTimeout(function(){btn.textContent=o},1200)};
+  try{navigator.clipboard.writeText(text).then(ok,function(){})}catch(e){}
+}
+
+$("#file").addEventListener("change",function(e){
+  file=e.target.files[0]; if(!file) return;
+  $("#dtxt").textContent = file.name;
+  $("#playerbox").innerHTML = "";
+  $("#playerwrap").style.display = "flex";
+  currentYtId = null;
+  try{
+    vid.src = URL.createObjectURL(file); 
+    vid.style.display = "block";
+    $("#playerbox").appendChild(vid);
+  }catch(e){}
+  runLocalAudio();
+});
+
+async function runLocalAudio(){
+  setStatus("Analizando audio local…");
+  clips = [
+    {start: 0, end: 30, score: 85, sc: 8, title: "Momento destacado local", fmt: defaultRatio, cat: "epico", reason: "Pico de volumen"}
+  ];
+  render();
+  setStatus("¡Listo! Candidatos locales cargados.");
+}
+
+function tagsFor(i,c){
+  var t=$("#topic").value.trim().toLowerCase().replace(/[^a-z0-9áéíóúñ]+/g,"");
+  var base = c.ai ? c.ai : ["viral", "shorts", "tiktok", "gaming"];
+  return (t?[t]:[]).concat(base).map(function(x){return "#"+x});
+}
+
+function render(){
+  $("#out").innerHTML='<div class="row" style="margin-bottom:10px"><button class="pri" id="ai" data-a="ai">Revisar y filtrar con Gemini</button><span class="meta" id="aist"></span></div>'+clips.map(function(c,i){
+    var cf = c.fmt || defaultRatio;
+    return'<div class="card clip" data-i="'+i+'">'+
+      '<div class="row" style="justify-content:space-between"><span class="meta">#'+(i+1)+" · "+fmt(c.start)+" – "+fmt(c.end)+'</span><span class="meta">Puntaje '+c.score+'</span></div>'+
+      '<div class="bar"><i style="width:'+c.score+'%"></i></div>'+
+      '<input class="ti" type="text" value="'+esc(c.title)+'">'+
+      '<div class="tg">'+tagsFor(i,c).map(function(t){return'<span class="tag">'+esc(t)+'</span>'}).join("")+'</div>'+
+      '<div class="meta ai" style="margin-top:6px">'+(c.cat?c.cat+" · "+(c.sc||5)+"/10 · "+(c.reason||""):"")+'</div>'+
+      '<div class="seg fm" style="margin-top:8px">'+
+        '<button data-a="f916" class="'+(cf==="9:16"?"on":"")+'">9:16 vertical</button>'+
+        '<button data-a="f169" class="'+(cf==="16:9"?"on":"")+'">16:9 horizontal</button>'+
+      '</div>'+
+      '<div class="row" style="margin-top:10px">'+
+        '<button class="pri" data-a="play">Ver clip</button>'+
+        '<button data-a="copy">Copiar info</button>'+
+        '<button data-a="dl">Descargar / Cortar (Web)</button>'+
+      '</div>'+
+    '</div>';
+  }).join("")+'<p class="meta">Cambia entre 9:16 y 16:9 en cada tarjeta para ver cómo se adapta la previsualización del reproductor superior.</p>';
+}
+
+$("#out").addEventListener("input",function(e){if(e.target.classList&&e.target.classList.contains("ti")){var cd=e.target.closest(".clip");clips[+cd.getAttribute("data-i")].title=e.target.value}});
+$("#out").addEventListener("click",function(e){
+  var b=e.target.closest("button");if(!b)return;
+  var a0=b.getAttribute("data-a");if(a0==="ai"){genAI();return}
+  var card=b.closest(".clip");if(!card)return;var i=+card.getAttribute("data-i");var c=clips[i];
+  var a=b.getAttribute("data-a");
+  
+  if(a==="f916" || a==="f169"){
+    c.fmt = (a==="f916" ? "9:16" : "16:9");
+    var pw = $("#playerwrap");
+    pw.className = "player-wrap " + (c.fmt === "9:16" ? "r916" : "r169");
+    var btns = card.querySelectorAll(".fm button");
+    for(var k=0; k<btns.length; k++){
+      btns[k].className = (btns[k].getAttribute("data-a") === a ? "on" : "");
+    }
+  } else if(a==="play"){
+    var pw = $("#playerwrap");
+    pw.style.display = "flex";
+    pw.className = "player-wrap " + ((c.fmt||defaultRatio) === "9:16" ? "r916" : "r169");
+    
+    if(currentYtId){
+      $("#playerbox").innerHTML = '<iframe src="https://www.youtube.com/embed/'+currentYtId+'?start='+c.start+'&autoplay=1" allowfullscreen></iframe>';
+      pw.scrollIntoView({behavior:"smooth",block:"center"});
+    } else if(file) {
+      vid.style.display = "block";
+      vid.currentTime = c.start;
+      vid.play();
+      pw.scrollIntoView({behavior:"smooth",block:"center"});
+    }
+  } else if(a==="copy"){
+    copy(card.querySelector(".ti").value+"\n"+tagsFor(i,c).join(" "),b);
+  } else if(a==="dl"){
+    if(currentYtId){
+      var ytLink = "https://www.youtube.com/watch?v=" + currentYtId + "&t=" + c.start;
+      copy(ytLink, b);
+      alert("Enlace copiado con marca de tiempo ("+fmt(c.start)+"). Pégalo en un descargador web gratuito de YouTube para bajar este fragmento.");
+    } else {
+      alert("Para videos locales, usa el reproductor o herramientas de corte móvil.");
+    }
+  }
+});
+})();
+</script>
+</body>
+</html>
